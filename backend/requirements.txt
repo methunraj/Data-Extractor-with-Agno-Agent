@@ -3,10 +3,14 @@ uvicorn[standard]
 pydantic-settings
 pandas
 openpyxl
-agno>=0.22.0
 python-dotenv
-googlesearch-python
-pycountry
 orjson>=3.9.0
 asyncio
 aiofiles
+langchain>=0.1.0
+langchain-google-genai>=0.0.5
+langchain-google-community>=0.0.1
+langgraph>=0.0.20
+langchain-experimental>=0.0.40
+langchain-core>=0.1.0
+matplotlib

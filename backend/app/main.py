@@ -11,7 +11,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.concurrency import run_in_threadpool
+from fastapi.middleware.cors import CORSMiddleware
 
 from . import schemas, services
 from .core.config import settings
@@ -37,6 +37,7 @@ async def lifespan(app: FastAPI):
     }
     app_state["LOCK"] = threading.Lock()
     logger.info(f"Application startup complete. Temp directory: {app_state['TEMP_DIR']}")
+    logger.info("Using LangChain/LangGraph for autonomous processing")
     
     yield  # Application is now running
     
@@ -51,6 +52,15 @@ app = FastAPI(
     title=settings.APP_TITLE,
     version=settings.APP_VERSION,
     lifespan=lifespan
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # --- Utility Functions ---
@@ -82,8 +92,10 @@ async def process_json_data(request: schemas.ProcessRequest, background_tasks: B
         # --- AI Processing Logic ---
         if request.processing_mode in ["auto", "ai_only"]:
             try:
+                logger.info(f"Starting autonomous LangChain processing for {request.file_name}")
+                
                 # Use async version for better performance
-                ai_response_content = await services.convert_with_agno_async(
+                ai_response_content = await services.convert_with_langchain_async(
                     request.json_data,
                     request.file_name,
                     request.description,
@@ -91,6 +103,7 @@ async def process_json_data(request: schemas.ProcessRequest, background_tasks: B
                     app_state["TEMP_DIR"]
                 )
                 
+                # Check for newly created files
                 newest_file = services.find_newest_file(app_state["TEMP_DIR"], files_before)
                 
                 if newest_file:
@@ -104,6 +117,8 @@ async def process_json_data(request: schemas.ProcessRequest, background_tasks: B
                     processing_time = time.time() - start_time
                     update_metrics(processing_time, processing_method, True)
                     
+                    logger.info(f"Autonomous processing successful: {original_filename}")
+                    
                     return schemas.ProcessResponse(
                         success=True, file_id=file_id, file_name=original_filename,
                         download_url=f"/download/{file_id}", ai_analysis=ai_response_content,
@@ -112,10 +127,10 @@ async def process_json_data(request: schemas.ProcessRequest, background_tasks: B
                     )
                 
                 if request.processing_mode == "ai_only":
-                    raise HTTPException(status_code=500, detail="AI processing was requested, but no file was generated.")
+                    raise HTTPException(status_code=500, detail="Autonomous AI processing was requested, but no file was generated.")
 
             except Exception as e:
-                logger.warning(f"AI processing failed: {e}. Falling back to direct conversion.")
+                logger.warning(f"Autonomous AI processing failed: {e}. Falling back to direct conversion.")
                 if request.processing_mode == "ai_only":
                     raise HTTPException(status_code=500, detail=f"AI-only processing failed: {e}")
 
@@ -168,7 +183,11 @@ async def get_system_metrics():
     success_rate = (metrics['successful_conversions'] / max(metrics['total_requests'], 1)) * 100
     
     return schemas.SystemMetrics(
-        **metrics,
+        total_requests=metrics['total_requests'],
+        successful_conversions=metrics['successful_conversions'],
+        ai_conversions=metrics['ai_conversions'],
+        direct_conversions=metrics['direct_conversions'],
+        failed_conversions=metrics['failed_conversions'],
         success_rate=round(success_rate, 2),
         average_processing_time=round(metrics['average_processing_time'], 2),
         active_files=active_files,
@@ -177,4 +196,22 @@ async def get_system_metrics():
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the Enhanced Agno AI API. See /docs for more info."}
+    return {
+        "message": "Welcome to the Enhanced LangChain AI API for JSON to Excel conversion",
+        "description": "Autonomous data processing using LangChain and LangGraph",
+        "endpoints": {
+            "/": "This information page",
+            "/docs": "Interactive API documentation",
+            "/process": "Process JSON data to Excel (POST)",
+            "/download/{file_id}": "Download generated file (GET)",
+            "/metrics": "View system metrics (GET)"
+        },
+        "features": [
+            "Fully autonomous data parsing - handles ANY format",
+            "Professional multi-sheet Excel generation",
+            "Automatic currency conversion to USD",
+            "Charts and visualizations",
+            "Self-healing for malformed data",
+            "Powered by LangChain and Google Gemini"
+        ]
+    }

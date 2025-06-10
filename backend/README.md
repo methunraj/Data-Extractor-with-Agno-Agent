@@ -1,54 +1,41 @@
-# Enhanced Agno API
+# Enhanced LangChain AI JSON to Excel API
 
-A high-performance API for converting JSON data to Excel files using Agno's AI capabilities.
+A high-performance API for converting JSON data to Excel files using LangChain and Google Gemini AI capabilities.
 
-## Performance Optimizations
+## Features
 
-This API has been optimized for high performance using Agno's latest capabilities:
+This API provides autonomous JSON to Excel conversion with advanced AI capabilities:
 
-### Agent Optimizations
+### Core Features
 
+- **Autonomous Data Processing**: Handles ANY input format including malformed JSON
+- **Self-Healing Parser**: Automatically detects and fixes data parsing errors
+- **Professional Excel Output**: Creates multi-sheet workbooks with charts and formatting
+- **Currency Conversion**: Converts financial data to USD (with Google Search integration)
 - **Agent Pooling**: Reuses initialized agents to avoid recreation costs
-- **SQLite Storage**: Uses Agno's SQLite storage for persistent sessions
-- **Exponential Backoff**: Automatically retries failed model calls with backoff
-- **LRU Caching**: Caches agent creation to minimize redundant instantiations
+- **Retry Logic**: Automatically retries failed operations with exponential backoff
 
-### JSON Processing Improvements
+### LangChain Integration
 
-- **Faster JSON Parsing**: Replaced standard JSON parser with orjson for better performance
-- **Smarter Error Handling**: Better handling of malformed JSON data
-- **Streaming Parser**: Support for parsing large JSON datasets efficiently
+- **ReAct Agent**: Uses LangChain's ReAct pattern for autonomous reasoning
+- **Tool Integration**: Python REPL and Google Search tools
+- **Google Gemini**: Powered by Google's latest Gemini 2.5 Flash model
+- **Graceful Fallback**: Falls back to direct conversion if AI processing fails
 
-### Async Operation
+### API Modes
 
-- **Async APIs**: All operations support async/await for better concurrency
-- **Non-blocking I/O**: File operations and model calls run in separate threads
-- **Background Tasks**: Long-running operations executed in the background
-
-### Memory Management
-
-- **Resource Cleanup**: Proper cleanup of agent resources on shutdown
-- **Optimized Memory Usage**: Takes advantage of Agno's lightweight agent design (~3.75 KiB per agent)
+- **Auto Mode**: Tries AI processing first, falls back to direct conversion
+- **AI Only**: Forces AI processing (fails if AI cannot process)
+- **Direct Only**: Bypasses AI for simple data structures
 
 ## Recent Fixes
 
-We've made the following fixes to address issues with the codebase:
+Fixed critical issues in the LangChain implementation:
 
-1. **Correct Storage Import**: Fixed the import path for storage modules from `agno.storage.memory` to `agno.storage.sqlite`
-2. **Added Missing Dependencies**: Installed required dependencies:
-   - `googlesearch-python` for web search capabilities
-   - `pycountry` for GoogleSearchTools functionality
-   - `orjson` for improved JSON parsing performance
-3. **Session Persistence**: Implemented proper SQLite-based storage for agent sessions
-
-## Performance Comparison
-
-Based on Agno documentation and benchmarks:
-
-| Metric | Agno (Optimized) | LangGraph | Factor |
-|--------|-----------------|-----------|--------|
-| Agent Instantiation | ~2μs | ~20ms | ~10,000x faster |
-| Memory Per Agent | ~3.75 KiB | ~137 KiB | ~50x lighter |
+1. **Google Search Configuration**: Made Google Custom Search Engine ID optional
+2. **Graceful Degradation**: AI agents work without Google Search when CSE ID is not configured
+3. **Metrics Endpoint**: Fixed duplicate parameter error in SystemMetrics
+4. **Error Handling**: Improved error handling for missing environment variables
 
 ## Usage
 
@@ -72,19 +59,39 @@ API endpoints:
 
 ## Configuration
 
-Environment variables:
+### Required Environment Variables
 
-- `GOOGLE_API_KEY` - Required for Gemini model access
+- `GOOGLE_API_KEY` - Required for Google Gemini model access
+
+### Optional Environment Variables
+
+- `GOOGLE_CSE_ID` - Google Custom Search Engine ID for advanced search features
+  - Get this from: https://cse.google.com/
+  - If not provided, Google Search will be disabled but the API will still work
+- `LANGCHAIN_TRACING_V2` - Enable LangChain tracing (default: false)
+- `LANGCHAIN_API_KEY` - LangSmith API key for tracing
 - `LOG_LEVEL` - Logging level (default: INFO)
+
+### Example .env file
+
+```bash
+# Required
+GOOGLE_API_KEY=your_google_api_key_here
+
+# Optional
+GOOGLE_CSE_ID=your_google_cse_id_here
+LANGCHAIN_TRACING_V2=false
+LOG_LEVEL=INFO
+```
 
 ## Dependencies
 
 - fastapi
 - uvicorn
 - pandas
-- agno (>= 0.22.0)
-- orjson (>= 3.9.0)
-- aiofiles
-- asyncio
-- googlesearch-python
-- pycountry 
+- langchain
+- langchain-google-genai
+- langchain-google-search
+- langgraph
+- openpyxl
+- matplotlib 
